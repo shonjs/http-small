@@ -25,9 +25,10 @@ fn main() {
     }
 
     let port: u32 = matches.opt_str("p").unwrap().parse::<u32>().unwrap();
-    let bind_address: String = String::from("0.0.0.0:").push_str(&port.to_string());
+    let mut bind_address: String = String::from("0.0.0.0:");
+    bind_address.push_str(&port.to_string());
     let listener = TcpListener::bind(bind_address).unwrap();
-    println!("Listening on port 8080");
+    println!("Listening on port {}", &port.to_string());
 
     for stream in listener.incoming() {
         match stream {
