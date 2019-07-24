@@ -5,3 +5,4 @@ authors = ["shonjs <rush2shon@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+getopts="0.2"
