@@ -8,11 +8,14 @@ use std::env;
 extern crate getopts;
 use getopts::Options;
 
+mod server;
+
 fn main() {
     let args: Vec<_> = env::args().collect();
 
     let mut opts = Options::new();
     opts.optopt("p", "port", "listening port", "PORT");
+    opts.optopt("n", "hostname", "name of host machine ", "HOST");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(matches) => {matches},
@@ -24,11 +27,25 @@ fn main() {
         return
     }
 
-    let port: u32 = matches.opt_str("p").unwrap().parse::<u32>().unwrap();
-    let mut bind_address: String = String::from("0.0.0.0:");
-    bind_address.push_str(&port.to_string());
+    if !matches.opt_present("n") {
+        println!("Host not specified. Defaults to localhost");
+    }
+
+    let port_number: u32 = matches.opt_str("p").unwrap().parse::<u32>().unwrap();
+    let host_name = matches.opt_str("n");
+
+    let mut bind_address: String = match host_name {
+        Some(host) => host.parse::<String>().unwrap(),
+        None => String::from("0.0.0.0")
+    };
+    bind_address.push(':');
+    bind_address.push_str(&port_number.to_string());
     let listener = TcpListener::bind(bind_address).unwrap();
-    println!("Listening on port {}", &port.to_string());
+    println!("Listening on port {}", &port_number.to_string());
+
+    let server: server::Server = server::Server::new(String::from("0.0.0.0"), port_number);
+    println!("server {}", server);
+    server.run();
 
     for stream in listener.incoming() {
         match stream {
@@ -39,12 +56,12 @@ fn main() {
                 println!("Error in connection {}", err);
             }
         }
-    }
+    };
 }
 
 fn handle_request(stream: TcpStream){
     handle_read(&stream);
-    read_response(stream)
+    read_response(stream);
 }
 
 fn handle_read(mut stream: &TcpStream) {
@@ -76,7 +93,7 @@ fn read_response(mut stream: TcpStream) {
             // let response = buffer.as_bytes();
             match stream.write(response) {
                 Ok(_) => println!("Response sent"),
-                Err(error) => println!("failed sending response")
+                Err(_error) => println!("failed sending response")
             }
         }
         Err(error) => println!("Error in opening file {}", error)
